@@ -111,6 +111,7 @@ UPDATE gameobject_template SET ScriptName='go_midsummer_music' WHERE entry=18817
 UPDATE gameobject_template SET ScriptName='go_brewfest_music' WHERE entry=186221;
 UPDATE gameobject_template SET ScriptName='go_elemental_rift' WHERE entry IN (179664, 179665, 179666, 179667);
 UPDATE gameobject_template SET ScriptName='go_dragon_head' WHERE entry IN(179556,179558,179881,179882);
+UPDATE gameobject_template SET ScriptName='go_bubbly_fissure' WHERE entry=177524;
 UPDATE gameobject_template SET ScriptName='go_unadorned_spike' WHERE entry IN(175787);
 UPDATE gameobject_template SET ScriptName='go_containment_coffer' WHERE entry=122088;
 UPDATE gameobject_template SET ScriptName='go_large_jack_o_lantern' WHERE entry=186887;
@@ -774,7 +775,6 @@ UPDATE creature_template SET ScriptName='boss_krosh_firehand' WHERE entry=18832;
 
 /* BLOOD FURNACE */
 /* The Maker,Broggok,Kelidan,Broggok's cloud */
-UPDATE creature_template SET ScriptName='boss_the_maker' WHERE entry=17381;
 UPDATE creature_template SET ScriptName='boss_broggok' WHERE entry=17380;
 UPDATE creature_template SET ScriptName='boss_kelidan_the_breaker' WHERE entry=17377;
 UPDATE creature_template SET ScriptName='mob_shadowmoon_channeler' WHERE entry=17653;
