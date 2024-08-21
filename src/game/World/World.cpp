@@ -563,6 +563,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_UINT32_START_ARENA_POINTS, "StartArenaPoints", 0, 0, getConfig(CONFIG_UINT32_MAX_ARENA_POINTS));
 
+    setConfig(CONFIG_BOOL_ALWAYS_SHOW_QUEST_GREETING, "AlwaysShowQuestGreeting", false);
+
     setConfig(CONFIG_BOOL_TAXI_FLIGHT_CHAT_FIX, "TaxiFlightChatFix", false);
     setConfig(CONFIG_BOOL_LONG_TAXI_PATHS_PERSISTENCE, "LongFlightPathsPersistence", false);
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
@@ -943,6 +945,16 @@ void World::SetInitialWorldSettings()
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
     sObjectMgr.SetDbc2StorageLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
+
+    if (VMAP::IVMapManager* vmmgr2 = VMAP::VMapFactory::createOrGetVMapManager()) // after map store init
+    {
+        std::vector<uint32> mapIds;
+        for (uint32 mapId = 0; mapId < sMapStore.GetNumRows(); mapId++)
+            if (sMapStore.LookupEntry(mapId))
+                mapIds.push_back(mapId);
+
+        vmmgr2->InitializeThreadUnsafe(mapIds);
+    }
 
     // Loading cameras for characters creation cinematic
     sLog.outString("Loading cinematic...");
