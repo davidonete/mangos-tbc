@@ -19810,6 +19810,12 @@ void Player::SendInitialPacketsAfterAddToMap()
 
     SendExtraAuraDurationsOnLogin(true);
     SendExtraAuraDurationsOnLogin(false);
+
+    if (!sWorld.getConfig(CONFIG_BOOL_LFG_ENABLED))
+    {
+        WorldPacket data(SMSG_LFG_DISABLED);
+        GetSession()->SendPacket(data);
+    }
 }
 
 void Player::SendUpdateToOutOfRangeGroupMembers()
@@ -20190,7 +20196,7 @@ BattleGround* Player::GetBattleGround() const
     if (GetBattleGroundId() == 0)
         return nullptr;
 
-    return sBattleGroundMgr.GetBattleGround(GetBattleGroundId(), m_bgData.bgTypeID);
+    return GetMap()->GetBG();
 }
 
 bool Player::InArena() const
