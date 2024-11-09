@@ -376,6 +376,10 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
             WorldPacket groupDataPacket = groupData.BuildPacket(0, false);
             player->SendDirectMessage(groupDataPacket);
         }
+
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnAddMember(this, player, 1);
+#endif
     }
 
     return true;
@@ -453,6 +457,10 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
         });
 
         SendUpdate();
+
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnRemoveMember(this, player, method);
+#endif
     }
     // if group before remove <= 2 disband it
     else
@@ -523,6 +531,10 @@ void Group::Disband(bool hideDestroy)
         }
 
         _homebindIfInstance(player);
+
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnRemoveMember(this, player, 1);
+#endif
     }
     m_memberSlots.clear();
 
