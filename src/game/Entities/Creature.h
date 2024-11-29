@@ -744,7 +744,8 @@ class Creature : public Unit
         SpellEntry const* ReachWithSpellCure(Unit* pVictim);
 
         void CallForHelp(float radius);
-        void CallAssistance(Unit* enemy = nullptr);
+        void CallAssistance();
+        void CallAssistance(Unit* enemy);
         void SetNoCallAssistance(bool val) { m_AlreadyCallAssistance = val; }
         bool CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction = true) const;
         bool CanInitiateAttack() const;
@@ -760,6 +761,7 @@ class Creature : public Unit
         void RemoveCorpse(bool inPlace = false);
 
         virtual void ForcedDespawn(uint32 timeMSToDespawn = 0, bool onlyAlive = false);
+        virtual void ForcedDespawn(std::chrono::milliseconds timeToDespawn, bool onlyAlive = false) { ForcedDespawn(timeToDespawn.count(), onlyAlive); }
 
         time_t const& GetRespawnTime() const { return m_respawnTime; }
         time_t GetRespawnTimeEx() const;
@@ -769,6 +771,7 @@ class Creature : public Unit
 
         uint32 GetRespawnDelay() const { return m_respawnDelay; }
         void SetRespawnDelay(uint32 delay, bool once = false) { m_respawnDelay = delay; m_respawnOverriden = true; m_respawnOverrideOnce = once; } // in seconds
+        void SetRespawnDelay(std::chrono::seconds delay, bool once = false) { SetRespawnDelay(delay.count(), once); }
 
         float GetRespawnRadius() const { return m_respawnradius; }
         void SetRespawnRadius(float dist) { m_respawnradius = dist; }
@@ -819,6 +822,8 @@ class Creature : public Unit
         bool hasWeaponForAttack(WeaponAttackType type) const override { return (Unit::hasWeaponForAttack(type) && hasWeapon(type)); }
         virtual void SetCanDualWield(bool value) override;
 
+        virtual bool CanDaze() const override;
+
         void SetInvisible(bool invisible) { m_isInvisible = invisible; }
         bool IsInvisible() const { return m_isInvisible; }
 
@@ -855,6 +860,8 @@ class Creature : public Unit
         void SetNoReputation(bool state) { m_noReputation = state; }
         bool IsIgnoringFeignDeath() const override;
         void SetIgnoreFeignDeath(bool state);
+        bool IsIgnoringSanctuary() const override;
+        void SetIgnoreSanctuary(bool state);
 
         void SetNoWoundedSlowdown(bool state);
         bool IsNoWoundedSlowdown() const;

@@ -1376,6 +1376,7 @@ class Unit : public WorldObject
         void SetPower(Powers power, uint32 val);
         void SetMaxPower(Powers power, uint32 val);
         int32 ModifyPower(Powers power, int32 dVal);
+        [[deprecated("Use ModifyPower()")]]
         void ApplyPowerMod(Powers power, uint32 val, bool apply);
         void ApplyMaxPowerMod(Powers power, uint32 val, bool apply);
         bool HasMana() { return GetPowerType() == POWER_MANA; }
@@ -1529,7 +1530,7 @@ class Unit : public WorldObject
         // Unit Melee events API: Crush/Glance/Daze
         bool CanCrush() const;
         bool CanGlance() const;
-        bool CanDaze() const;
+        virtual bool CanDaze() const { return false; };
 
         void SetCanDodge(const bool flag);
         void SetCanParry(const bool flag);
@@ -2352,6 +2353,7 @@ class Unit : public WorldObject
         bool IsFeigningDeathSuccessfully() const { return hasUnitState(UNIT_STAT_FEIGN_DEATH); }
         void SetFeignDeath(bool apply, ObjectGuid casterGuid = ObjectGuid(), uint32 spellID = 0, bool dynamic = true, bool success = true);
         virtual bool IsIgnoringFeignDeath() const { return false; }
+        virtual bool IsIgnoringSanctuary() const { return false; }
 
         virtual bool IsSlowedInCombat() const { return false; }
 

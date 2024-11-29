@@ -2607,7 +2607,7 @@ void Unit::CalculateDamageAbsorbAndResist(Unit* caster, SpellSchoolMask schoolMa
                 currentAbsorb = maxAbsorb;
 
             int32 manaReduction = int32(currentAbsorb * manaMultiplier);
-            ApplyPowerMod(POWER_MANA, manaReduction, false);
+            ModifyPower(POWER_MANA, -manaReduction);
         }
 
         (*i)->OnManaAbsorb(currentAbsorb);
@@ -3115,12 +3115,6 @@ bool Unit::CanGlance() const
     if (GetTypeId() == TYPEID_PLAYER || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
         return !GetCharmerGuid().IsCreature();
     return false;
-}
-
-bool Unit::CanDaze() const
-{
-    // Generally, only npcs are able to daze targets in melee
-    return (GetTypeId() == TYPEID_UNIT && !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED));
 }
 
 void Unit::SetCanDodge(const bool flag)
@@ -5721,6 +5715,7 @@ void Unit::RemoveAura(Aura* Aur, AuraRemoveMode mode)
 
     // Set remove mode
     Aur->SetRemoveMode(mode);
+    Aur->InvalidateScriptRef();
 
     // some ShapeshiftBoosts at remove trigger removing other auras including parent Shapeshift aura
     // remove aura from list before to prevent deleting it before
@@ -11447,7 +11442,13 @@ bool Unit::IsAllowedDamageInArea(Unit* attacker, Unit* pVictim)
 
     // can't damage player controlled unit by player controlled unit in sanctuary
     AreaTableEntry const* area = GetAreaEntryByAreaID(pVictim->GetAreaId());
-    return !(area && area->flags & AREA_FLAG_SANCTUARY);
+    if (!area || !(area->flags & AREA_FLAG_SANCTUARY))
+        return true;
+
+    if (pVictim->IsIgnoringSanctuary())
+        return true;
+    else
+        return false;
 }
 
 class UnitVisitObjectsInRangeNotifyEvent : public BasicEvent
