@@ -2434,6 +2434,10 @@ void Player::Regenerate(Powers power, uint32 diff)
         case POWER_HEALTH:
             return;
     }
+	
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnRegenerate(this, power, diff, addvalue);
+#endif
 
     if (power != POWER_RAGE)
     {
