@@ -1549,6 +1549,9 @@ void Loot::GroupCheck()
                 masterLooter = player;
         }
 
+        if (masterLooter)
+            break;
+
         // check if there is need to launch a roll
         for (auto lootItem : m_lootItems)
         {
