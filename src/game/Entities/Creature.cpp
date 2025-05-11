@@ -150,7 +150,8 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     m_settings(this),
     m_countSpawns(false),
     m_creatureGroup(nullptr), m_imposedCooldown(false),
-    m_creatureInfo(nullptr), m_mountInfo(nullptr)
+    m_creatureInfo(nullptr), m_mountInfo(nullptr),
+    m_combatOnlyStealth(false)
 {
     m_valuesCount = UNIT_END;
 
