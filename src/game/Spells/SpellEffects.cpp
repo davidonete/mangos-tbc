@@ -1518,52 +1518,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     static_cast<Creature*>(m_caster)->ForcedDespawn(2000);
                     return;
                 }
-                case 28098:                                 // Stalagg Tesla Effect
-                case 28110:                                 // Feugen Tesla Effect
-                {
-                    if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT && unitTarget->IsAlive())
-                    {
-                        if (!m_caster->hasUnitState(UNIT_STAT_ROOT))    // This state is found in sniffs and is probably caused by another aura like 23973
-                            m_caster->addUnitState(UNIT_STAT_ROOT);     // but as we are not sure (the aura does not show up in sniffs), we handle the state here
-
-                        // Cast chain (Stalagg Chain or Feugen Chain)
-                        uint32 chainSpellId = m_spellInfo->Id == 28098 ? 28096 : 28111;
-                        // Only cast if not already present and in range
-                        if (!unitTarget->HasAura(chainSpellId) && m_caster->IsWithinDistInMap(unitTarget, 60.0f))
-                        {
-                            if (!m_caster->IsImmuneToPlayer())
-                                m_caster->SetImmuneToPlayer(true);
-                            m_caster->CastSpell(unitTarget, chainSpellId, TRIGGERED_OLD_TRIGGERED);
-                        }
-                        // Not in range and fight in progress: remove aura and cast Shock onto players
-                        else if (!m_caster->IsWithinDistInMap(unitTarget, 60.0f) && m_caster)
-                        {
-                            unitTarget->RemoveAurasDueToSpell(chainSpellId);
-                            m_caster->SetImmuneToPlayer(false);
-
-                            if (Unit* target = ((Creature*)m_caster)->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                                m_caster->CastSpell(target, 28099, TRIGGERED_NONE);
-                        }
-                        // else: in range and already have aura: do nothing
-                    }
-                    return;
-                }
-                case 28359:                                 // Trigger Teslas
-                {
-                    if (unitTarget)
-                    {
-                        DoScriptText(-1533150, unitTarget, unitTarget);
-                        unitTarget->RemoveAllAuras();
-                        unitTarget->CastSpell(unitTarget, 28159, TRIGGERED_NONE);   // Shock
-                    }
-                    return;
-                }
                 case 28414:                                 // Call of the Ashbringer
                 {
                     if (!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER)
                         return;
                     static constexpr uint32 AshbringerSounds[12] = { 8906,8907,8908,8920,8921,8922,8923,8924,8925,8926,8927,8928 };
-                    m_caster->PlayDirectSound(AshbringerSounds[urand(0, 11)], PlayPacketParameters(PLAY_TARGET, (Player*)m_caster));
+                    m_caster->PlayDirectSound(AshbringerSounds[urand(0, 11)], PlayPacketParameters(PlayPacketSettings::TARGET, (Player*)m_caster));
                     return;
                 }
                 case 28697:                                 // Forgiveness
@@ -1580,16 +1540,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         m_caster->CastCustomSpell(m_caster, 28733, &bp, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED);
                         m_caster->RemoveAurasDueToSpell(28734);
                     }
-
-                    return;
-                }
-                case 28961:                                 // Summon Corpse Scarabs (10)
-                 {
-                    if (unitTarget->IsAlive())
-                        return;
-
-                    unitTarget->CastSpell(unitTarget, 28864, TRIGGERED_OLD_TRIGGERED);  // Actual summoning spell
-                    ((Creature*)unitTarget)->ForcedDespawn(2000);
 
                     return;
                 }
@@ -2894,7 +2844,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     int32 bonusDamage = m_caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellInfo))
                                         + unitTarget->SpellBaseDamageBonusTaken(GetSpellSchoolMask(m_spellInfo));
                     // Does Amplify Magic/Dampen Magic influence flametongue? If not, the above addition must be removed.
-                    float weaponSpeed = float(m_CastItem->GetProto()->Delay) / IN_MILLISECONDS;
+                    float weaponSpeed = float(m_CastItem->GetProto()->Delay) / float(IN_MILLISECONDS);
                     bonusDamage = m_caster->SpellBonusWithCoeffs(m_spellInfo, eff_idx, 0, bonusDamage, 0, false); // apply spell coeff
                     int32 totalDamage = (damage * 0.01 * weaponSpeed) + bonusDamage;
 
@@ -2909,7 +2859,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
             {
                 if (m_CastItem) // Does not scale with gear
                 {
-                    float weaponSpeed = float(m_CastItem->GetProto()->Delay) / IN_MILLISECONDS;
+                    float weaponSpeed = float(m_CastItem->GetProto()->Delay) / float(IN_MILLISECONDS);
                     int32 totalDamage = (damage * 0.01f * weaponSpeed * (m_CastItem->GetEnchantmentModifier() + 100.f) / 100.f);
                     m_caster->CastCustomSpell(unitTarget, 16368, &totalDamage, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED, m_CastItem);
                 }
@@ -4005,13 +3955,13 @@ void Spell::SendLoot(ObjectGuid guid, LootType loottype, LockType lockType)
 
 void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
 {
-    if (!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER)
+    if (!m_caster || !m_caster->IsPlayer())
     {
         DEBUG_LOG("WORLD: Open Lock - No Player Caster!");
         return;
     }
 
-    Player* player = (Player*)m_caster;
+    Player* player = static_cast<Player*>(m_caster);
 
     uint32 lockId;
 
@@ -4067,6 +4017,9 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
     }
     else
     {
+        if (Unit* owner = gameObjTarget->GetOwner())
+            player->SetOutOfCombatWithVictim(owner);
+
         SendLoot(gameObjTarget->GetObjectGuid(), LOOT_SKINNING, LockType(m_spellInfo->EffectMiscValue[eff_idx]));
         m_spellLog.AddLog(uint32(SPELL_EFFECT_OPEN_LOCK), gameObjTarget->GetPackGUID());
     }
@@ -6376,32 +6329,12 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     unitTarget->CastSpell(nullptr, 27747, TRIGGERED_OLD_TRIGGERED);  // Steam Tank Passive
                     return;
                 }
-                case 28338:                                 // Magnetic Pull
-                case 28339:                                 // Magnetic Pull
-                {
-                    if (unitTarget && m_caster->GetVictim())
-                        unitTarget->CastSpell(m_caster->GetVictim(), 28337, TRIGGERED_OLD_TRIGGERED);   // target cast actual Magnetic Pull on caster's victim
-                        // ToDo research if target should also get the threat of the caster for caster's victim.
-                        // This is the case in WotLK version but we have no proof of this in Classic/TBC
-                        // and it was common at these times to let players manage threat and tank transitions by themselves
-                    return;
-                }
-
                 case 28352:                                 // Breath of Sargeras
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
                         return;
 
                     unitTarget->CastSpell(unitTarget, 28342, TRIGGERED_OLD_TRIGGERED);
-                    return;
-                }
-                case 29336:                                 // Despawn Buffet
-                case 29379:                                 // Despawn Crypt Guards
-                case 30134:                                 // Despawn Boss Adds
-                case 30228:                                 // Despawn Summons
-                {
-                    if (unitTarget)
-                        ((Creature*)unitTarget)->ForcedDespawn();
                     return;
                 }
                 case 29395:                                 // Break Kaliri Egg
@@ -6920,7 +6853,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
                         return;
 
-                    m_caster->PlayMusic(12318, PlayPacketParameters(PLAY_TARGET, static_cast<Player*>(unitTarget)));
+                    m_caster->PlayMusic(12318, PlayPacketParameters(PlayPacketSettings::TARGET, static_cast<Player*>(unitTarget)));
                     return;
                 }
                 case 45204:                                 // Clone Me!
@@ -8662,7 +8595,7 @@ void Spell::EffectQuestFail(SpellEffectIndex eff_idx)
 
 void Spell::EffectPlaySound(SpellEffectIndex eff_idx)
 {
-    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
+    if (!unitTarget || unitTarget->IsPlayer())
         return;
 
     uint32 soundId = m_spellInfo->EffectMiscValue[eff_idx];
@@ -8672,12 +8605,12 @@ void Spell::EffectPlaySound(SpellEffectIndex eff_idx)
         return;
     }
 
-    unitTarget->PlayDirectSound(soundId, PlayPacketParameters(PLAY_TARGET, (Player*)unitTarget));
+    unitTarget->PlayDirectSound(soundId, PlayPacketParameters(PlayPacketSettings::TARGET, static_cast<Player*>(unitTarget)));
 }
 
 void Spell::EffectPlayMusic(SpellEffectIndex eff_idx)
 {
-    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
+    if (!unitTarget || unitTarget->IsPlayer())
         return;
 
     uint32 soundId = m_spellInfo->EffectMiscValue[eff_idx];
@@ -8687,7 +8620,7 @@ void Spell::EffectPlayMusic(SpellEffectIndex eff_idx)
         return;
     }
 
-    m_caster->PlayMusic(soundId, PlayPacketParameters(PLAY_TARGET, (Player*)unitTarget));
+    m_caster->PlayMusic(soundId, PlayPacketParameters(PlayPacketSettings::TARGET, static_cast<Player*>(unitTarget)));
 }
 
 void Spell::EffectBind(SpellEffectIndex /*eff_idx*/)

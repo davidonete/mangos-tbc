@@ -50,6 +50,7 @@
 #include "Entities/TemporarySpawn.h"
 #include "Maps/InstanceData.h"
 #include "AI/ScriptDevAI/include/sc_grid_searchers.h"
+#include "Spells/SpellStacking.h"
 
 #define NULL_AURA_SLOT 0xFF
 
@@ -640,7 +641,7 @@ void AreaAura::Update(uint32 diff)
                             // non caster self-casted auras (stacked from diff. casters)
                             if (aur->GetModifier()->m_auraname != SPELL_AURA_NONE && i->second->GetCasterGuid() != GetCasterGuid())
                             {
-                                apply = IsStackableSpell(actualSpellInfo, i->second->GetSpellProto(), target);
+                                apply = sSpellStacker.IsStackableSpell(actualSpellInfo, i->second->GetSpellProto(), target);
                                 break;
                             }
                             if (aur->GetModifier()->m_auraname != SPELL_AURA_NONE || i->second->GetCasterGuid() == GetCasterGuid())
@@ -1331,15 +1332,6 @@ void Aura::TriggerSpell()
                             triggerTarget->ModifyPower(POWER_MANA, 10);
                             triggerTarget->SendEnergizeSpellLog(triggerTarget, 27747, 10, POWER_MANA);
                         }
-                        return;
-                    }
-                    // Detonate Mana
-                    case 27819:
-                    {
-                        // 50% Mana Burn
-                        int32 bpDamage = (int32)triggerTarget->GetPower(POWER_MANA) * 0.5f;
-                        triggerTarget->ModifyPower(POWER_MANA, -bpDamage);
-                        triggerTarget->CastCustomSpell(triggerTarget, 27820, &bpDamage, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED, nullptr, this, triggerTarget->GetObjectGuid());
                         return;
                     }
 //                    // Controller Timer
@@ -2181,28 +2173,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                             if (target->HasAura(26681))
                                 target->RemoveAurasDueToSpell(26681);
                         }
-                        return;
-                    }
-                    case 28832:                             // Mark of Korth'azz
-                    case 28833:                             // Mark of Blaumeux
-                    case 28834:                             // Mark of Rivendare
-                    case 28835:                             // Mark of Zeliek
-                    {
-                        int32 damage;
-                        switch (GetStackAmount())
-                        {
-                            case 1:
-                                return;
-                            case 2: damage =   250; break;
-                            case 3: damage =  1000; break;
-                            case 4: damage =  3000; break;
-                            default:
-                                damage = 1000 * GetStackAmount();
-                                break;
-                        }
-
-                        if (Unit* caster = GetCaster())
-                            caster->CastCustomSpell(target, 28836, &damage, nullptr, nullptr, TRIGGERED_OLD_TRIGGERED, nullptr, this);
                         return;
                     }
                     case 31736:                                     // Ironvine Seeds
@@ -4829,11 +4799,6 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 target->CastSpell(target, 23478, TRIGGERED_OLD_TRIGGERED, nullptr, this);
                 target->CastSpell(target, 23644, TRIGGERED_OLD_TRIGGERED, nullptr, this);
                 return;
-            case 29213:                                     // Curse of the Plaguebringer
-                if (m_removeMode != AURA_REMOVE_BY_DISPEL)
-                    // Cast Wrath of the Plaguebringer if not dispelled
-                    target->CastSpell(target, 29214, TRIGGERED_OLD_TRIGGERED, 0, this);
-                return;
             case 29946:
                 if (m_removeMode != AURA_REMOVE_BY_EXPIRE)
                     // Cast "crossed flames debuff"
@@ -6006,9 +5971,40 @@ void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
 
 void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
 {
-    if (GetTarget()->GetTypeId() != TYPEID_PLAYER)
+    if (!GetTarget()->IsPlayer())
         return;
-    GetTarget()->ApplyAttackTimePercentMod(RANGED_ATTACK, float(m_modifier.m_amount), apply);
+
+    Player* player = static_cast<Player*>(GetTarget());
+    if (apply)
+    {
+        if (player->GetHighestAmmoMod() >= m_modifier.m_amount) // only take highest
+            return;
+    }
+
+    Item* weapon = player->GetWeaponForAttack(RANGED_ATTACK);
+    if (GetSpellProto()->EquippedItemClass != -1 && (!weapon || !weapon->IsFitToSpellRequirements(GetSpellProto())))
+        return;
+
+    // mirrors UpdateRangedWeaponDependantAmmoHasteAura
+
+    int32 oldHighest, newHighest;
+    if (apply)
+    {
+        oldHighest = player->GetHighestAmmoMod();
+        newHighest = m_modifier.m_amount;
+    }
+    else
+    {
+        oldHighest = m_modifier.m_amount;
+        newHighest = weapon ? GetTarget()->GetMaxPositiveAuraModifierByItemClass(SPELL_AURA_MOD_RANGED_AMMO_HASTE, weapon) : 0;
+    }
+
+    if (oldHighest > 0)
+        GetTarget()->ApplyAttackTimePercentMod(RANGED_ATTACK, float(oldHighest), false);
+    if (newHighest > 0)
+        GetTarget()->ApplyAttackTimePercentMod(RANGED_ATTACK, float(newHighest), true);
+
+    player->SetHighestAmmoMod(newHighest);
 }
 
 /********************************/
