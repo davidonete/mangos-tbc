@@ -13467,6 +13467,10 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
         itr->second->ApplyOrRemoveSpellIfCan(this, zone, area, true);
 
     UpdateForQuestWorldObjects();
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnAcceptQuest(this, quest_id, questGiver ? &questGiver->GetObjectGuid() : nullptr);
+#endif
 }
 
 void Player::CompleteQuest(uint32 quest_id)

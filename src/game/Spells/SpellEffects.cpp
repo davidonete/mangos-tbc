@@ -57,6 +57,10 @@
 #include "Maps/InstanceData.h"
 #include "Entities/Transports.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 pEffect SpellEffects[MAX_SPELL_EFFECTS] =
 {
     &Spell::EffectNULL,                                     //  0
@@ -3756,6 +3760,10 @@ bool Spell::DoCreateItem(SpellEffectIndex /*eff_idx*/, uint32 itemtype, bool rep
         // we succeeded in creating at least one item, so a levelup is possible
         if (!bgType)
             player->UpdateCraftSkill(m_spellInfo->Id);
+
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnCreateItem(player, pItem, num_to_add);
+#endif
     }
     return true;
 }

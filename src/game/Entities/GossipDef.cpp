@@ -24,6 +24,10 @@
 #include "Server/WorldSession.h"
 #include "Tools/Formulas.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 GossipMenu::GossipMenu(WorldSession* session) : m_session(session)
 {
     m_gItems.reserve(16);                                   // can be set for max from most often sizes to speedup push_back and less memory use
@@ -443,6 +447,10 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
     GetMenuSession()->SendPacket(data);
 
     DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_QUEST_DETAILS - for %s of %s, questid = %u", GetMenuSession()->GetPlayer()->GetGuidStr().c_str(), guid.GetString().c_str(), pQuest->GetQuestId());
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnGossipQuestDetails(GetMenuSession()->GetPlayer(), pQuest, guid);
+#endif
 }
 
 void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGUID, bool EnableNext) const
@@ -526,6 +534,10 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
     data << uint32(pQuest->GetCharTitleBitIndex());         // character title
     GetMenuSession()->SendPacket(data);
     DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_OFFER_REWARD NPCGuid = %s, questid = %u", npcGUID.GetString().c_str(), pQuest->GetQuestId());
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnGossipQuestReward(GetMenuSession()->GetPlayer(), pQuest, npcGUID);
+#endif
 }
 
 void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel) const
