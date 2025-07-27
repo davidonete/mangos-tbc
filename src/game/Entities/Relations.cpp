@@ -25,6 +25,10 @@
 #include "Globals/ObjectMgr.h"
 #include "Tools/Formulas.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 /////////////////////////////////////////////////
 /// @file       Relations.cpp
 /// @date       September, 2017
@@ -309,6 +313,14 @@ ReputationRank Unit::GetReactionTo(const Corpse* corpse) const
 ReputationRank GameObject::GetReactionTo(Unit const* unit) const
 {
     MANGOS_ASSERT(unit)
+
+#ifdef ENABLE_MODULES
+    ReputationRank overrideReaction;
+    if (sModuleMgr.OnGetReactionTo(this, unit, overrideReaction))
+    {
+        return overrideReaction;
+    }
+#endif
 
     // Original logic begins
 
