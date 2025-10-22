@@ -2137,6 +2137,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         // near teleport, triggering send MSG_MOVE_TELEPORT_ACK from client at landing
         if (!GetSession()->PlayerLogout())
             SendTeleportPacket(x, y, z, orientation, currentTransport);
+
+        if (Loot* loot = sLootMgr.GetLoot(this))
+            loot->Release(this);
     }
     else
     {
@@ -2207,6 +2210,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 GetSession()->SendPacket(data);
             }
 
+            if (Loot* loot = sLootMgr.GetLoot(this))
+                loot->Release(this);
+
             // remove from old map now
             if (oldmap)
                 oldmap->Remove(this, false);
@@ -2257,6 +2263,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         else                                                // !map->CanEnter(this)
             return false;
     }
+
     return true;
 }
 
