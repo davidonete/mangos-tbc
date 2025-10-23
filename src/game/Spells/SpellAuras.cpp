@@ -52,6 +52,10 @@
 #include "AI/ScriptDevAI/include/sc_grid_searchers.h"
 #include "Spells/SpellStacking.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 #define NULL_AURA_SLOT 0xFF
 
 /**
@@ -6600,6 +6604,13 @@ void Aura::PeriodicTick()
     // passive periodic trigger spells should not be updated when dead, only death persistent should
     if (!target->IsAlive() && GetHolder()->IsPassive())
         return;
+	
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnPeriodicTick(this)) 
+    {
+        return;
+    }
+#endif
 
     SpellEntry const* spellProto = GetSpellProto();
 
