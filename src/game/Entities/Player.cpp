@@ -2772,6 +2772,11 @@ void Player::SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 RestXP, bool rec
 
 void Player::GiveXP(uint32 xp, Creature* victim, float groupRate)
 {
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnPreGiveXP(this, xp, victim))
+        return;
+#endif
+
     if (xp < 1)
         return;
 
