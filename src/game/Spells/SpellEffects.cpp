@@ -5452,6 +5452,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     return;
                 }
                 case 10101:                                 // Knock Away variants
+                case 11902:
                 case 18103:
                 case 18670:
                 case 18813:
@@ -5491,6 +5492,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         case 30013:                                 // Disarm - Ethereal Thief 16544
                         case 37317:                                 // Knockback - Tempest Falconer 20037
                         case 10101:
+                        case 11902:
                             pct = -100;
                             break;
                     }
